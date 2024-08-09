@@ -41,6 +41,28 @@ ThreadPool* thread_init(int min, int max, int capacity) {
 
 
 void* Worker(void* args){
+    ThreadPool* tp = (ThreadPool*)args;
+    while(1){
+        pthread_mutex_lock(&tp->poolMutex);
+
+        while(tp->taskHead==tp->taskTail){
+            pthread_cond_wait(&tp->is_empty,&tp->poolMutex);
+        }
+
+
+        void (*mission)(void*args) = tp->task->function;
+        void* arg = tp->task->args;
+        tp->taskHead = (tp->taskHead+1)%tp->taskCapacity;
+        tp->tasksize--;
+
+        pthread_mutex_unlock(&tp->poolMutex);
+
+        mission(tp->task->args);
+
+
+    }
+
+
     return NULL;
 }
 
