@@ -12,8 +12,8 @@ ThreadPool* thread_init(int min, int max, int capacity) {
         threadPool->task=0;
         threadPool->taskTail=0;
         threadPool->task = (Task*)malloc(sizeof(Task) * threadPool->taskCapacity);
-		if(pthread_mutex_init(&threadPool->poolMutex, NULL) !=0,
-		   pthread_cond_init(&threadPool->is_empty,NULL) !=0,
+		if(pthread_mutex_init(&threadPool->poolMutex, NULL) !=0&&
+		   pthread_cond_init(&threadPool->is_empty,NULL) != 0&&
 		   pthread_cond_init(&threadPool->is_full, NULL) !=0)
 		   {
 			break;
@@ -34,6 +34,19 @@ ThreadPool* thread_init(int min, int max, int capacity) {
 
 	return NULL;
 
+
+
+
+}
+
+
+void* Worker(void* args){
+    return NULL;
+}
+
+
+void* Manager(void* args){
+    return NULL;
 
 
 
