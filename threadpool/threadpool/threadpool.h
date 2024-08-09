@@ -3,6 +3,9 @@
 #include<stdlib.h>
 #include<pthread.h>
 
+#define REDUCE 2		//每次增加线程最多增加两个
+
+
 typedef struct Task {
 	void (*function)(void* args);
 	void* args;
@@ -16,6 +19,8 @@ typedef struct ThreadPool {
 	Task* task;		//任务队列
 	int taskCapacity;	//最大容纳任务数量
 	int tasksize;	//当前任务数量
+	int taskHead;	//队头
+	int taskTail;	//队尾
 
 	pthread_t* work;	//工作进程的ID
 	pthread_t* manager;	//管理者的进程ID
@@ -30,32 +35,6 @@ typedef struct ThreadPool {
 
 }ThreadPool;
 
-
-ThreadPool* thread_init(int min, int max, int capacity) {
-
-	do {
-		ThreadPool* threadPool = (ThreadPool*)malloc(sizeof(ThreadPool));
-		threadPool->min = min;
-		threadPool->max = max;
-		threadPool->shutdown = 0;
-		if(pthread_mutex_init(&threadPool->poolMutex, NULL) !=0,
-		   pthread_cond_init(&threadPool->is_empty,NULL) !=0,
-		   pthread_cond_init(&threadPool->is_full, NULL) !=0)
-		   {
-			break;
-		   }
-		   
-
-
-
-		
-
-		return threadPool;
-	} while (0);
-
-	return NULL;
-
-
-
-
-}
+void* Worker(void* args);
+void* Manager(void* args);
+ThreadPool* thread_init(int min, int max, int capacity);
