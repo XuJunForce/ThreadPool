@@ -14,7 +14,7 @@ ThreadPool* Thread_init(int min, int max, int capacity) {
         threadPool->taskTail=0;
         threadPool->busyThread=0;
         threadPool->task = (Task*)malloc(sizeof(Task) * threadPool->taskCapacity);
-        memset(task,0,sizeof(task));
+        memset(threadPool->task,0,sizeof(Task));
         threadPool->work = (pthread_t*)malloc(sizeof(pthread_t)*max);
         memset(threadPool->work,0,sizeof(threadPool->work));
 		if(pthread_mutex_init(&threadPool->poolMutex, NULL) !=0&&
@@ -35,24 +35,14 @@ ThreadPool* Thread_init(int min, int max, int capacity) {
     if(threadPool && threadPool->work) free(threadPool->work);
     if(threadPool && threadPool->manager) free(threadPool->manager);
     if(threadPool) free(threadPool);
-
-    
-
 	return NULL;
-
-
-
-
 }
 
 
 void* Worker(void* args){
     ThreadPool* tp = (ThreadPool*)args;
     while(1){
-        pthread_mutex_lock(&tp->poolMutex);
-        
-        
-        
+        pthread_mutex_lock(&tp->poolMutex);    
         //任务空
         while(tp->taskHead==tp->taskTail){
             pthread_cond_wait(&tp->is_empty,&tp->poolMutex);
@@ -66,10 +56,6 @@ void* Worker(void* args){
             }
             pthread_mutex_unlock(&tp->poolMutex);
         }
-
-
-
-
         tp->busyThread++;
         void (*mission)(void*args) = tp->task->function;
         void* arg = tp->task->args;
@@ -143,4 +129,20 @@ void Thread_exit(ThreadPool* tp){
         }
     }
     pthread_exit(NULL);
+}
+
+
+void Task_add(ThreadPool* tp,void*(func)(void*),void*arg){
+    pthread_mutex_lock(&tp->poolMutex);
+
+    while(tp->tasksize>=tp->taskCapacity){
+        pthread_cond_wait(&tp->is_full,&tp->poolMutex);
+    }
+    tp->task[tp->taskHead].function = func;
+    tp->task[tp->taskHead].args = arg;
+    tp->taskHead = (tp->taskHead++) % tp->taskCapacity;
+    tp->tasksize++;
+    pthread_cond_signal(&tp->is_empty);
+    pthread_mutex_unlock(&tp->poolMutex);
+
 }
