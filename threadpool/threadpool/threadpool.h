@@ -4,12 +4,15 @@
 #include<pthread.h>
 
 typedef struct Task {
-
+	void (*function)(void* args);
+	void* args;
 }Task;
 
 typedef struct ThreadPool {
 	int min;	//线程池中最小的线程数
 	int max;	//线程池中最小的线程数
+	int shutdown;	//线程池是否被关闭
+
 	Task* task;		//任务队列
 	int taskCapacity;	//最大容纳任务数量
 	int tasksize;	//当前任务数量
@@ -21,6 +24,7 @@ typedef struct ThreadPool {
 	pthread_mutex_t poolMutex;	//线程池临界区
 	pthread_cond_t is_empty;	//任务队列空
 	pthread_cond_t is_full;		//任务队列满
+	
 
 
 
@@ -28,7 +32,28 @@ typedef struct ThreadPool {
 
 
 ThreadPool* thread_init(int min, int max, int capacity) {
-	
+
+	do {
+		ThreadPool* threadPool = (ThreadPool*)malloc(sizeof(ThreadPool));
+		threadPool->min = min;
+		threadPool->max = max;
+		threadPool->shutdown = 0;
+		if(pthread_mutex_init(&threadPool->poolMutex, NULL) !=0,
+		   pthread_cond_init(&threadPool->is_empty,NULL) !=0,
+		   pthread_cond_init(&threadPool->is_full, NULL) !=0)
+		   {
+			break;
+		   }
+		   
+
+
+
+		
+
+		return threadPool;
+	} while (0);
+
+	return NULL;
 
 
 
