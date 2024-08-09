@@ -27,7 +27,7 @@ typedef struct ThreadPool {
 	int taskTail;	//队尾
 
 	pthread_t* work;	//工作进程的ID
-	pthread_t* manager;	//管理者的进程ID
+	pthread_t manager;	//管理者的进程ID
 
 
 	pthread_mutex_t poolMutex;	//线程池临界区

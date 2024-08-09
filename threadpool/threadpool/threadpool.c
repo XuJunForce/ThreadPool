@@ -13,21 +13,29 @@ ThreadPool* Thread_init(int min, int max, int capacity) {
         threadPool->task=0;
         threadPool->taskTail=0;
         threadPool->busyThread=0;
+        threadPool->taskHead = 0;
+        threadPool->taskTail = 0;
+        threadPool->taskCapacity =capacity;
         threadPool->task = (Task*)malloc(sizeof(Task) * threadPool->taskCapacity);
-        memset(threadPool->task,0,sizeof(Task));
+        //memset(threadPool->task,0,sizeof(Task) * threadPool->taskCapacity);
+
+        printf("Task内存分配成功\n");
         threadPool->work = (pthread_t*)malloc(sizeof(pthread_t)*max);
-        memset(threadPool->work,0,sizeof(threadPool->work));
-		if(pthread_mutex_init(&threadPool->poolMutex, NULL) !=0&&
-		   pthread_cond_init(&threadPool->is_empty,NULL) != 0&&
+        memset(threadPool->work,0,sizeof(pthread_t)*threadPool->max);
+        printf("工作线程内存分配成功\n");
+		if(pthread_mutex_init(&threadPool->poolMutex, NULL) !=0||
+		   pthread_cond_init(&threadPool->is_empty,NULL) != 0||
 		   pthread_cond_init(&threadPool->is_full, NULL) !=0)
 		   {
 			break;
 		   }
+        printf("信号量初始化成功\n");
 		for(int i =0;i<min;i++){
-			pthread_create(&threadPool->work[i],NULL,Worker,&threadPool);
+			pthread_create(&threadPool->work[i],NULL,Worker,threadPool);
 		}
+        printf("最小线程量初始化成功\n");
         threadPool->liveThread=min;
-        pthread_create(&threadPool->manager,NULL, Manager,&threadPool);
+        pthread_create(&threadPool->manager,NULL, Manager,threadPool);
 
 		return threadPool;
 	} while (0);
@@ -44,7 +52,7 @@ void* Worker(void* args){
     while(1){
         pthread_mutex_lock(&tp->poolMutex);    
         //任务空
-        while(tp->taskHead==tp->taskTail){
+        while(tp->tasksize==0){
             pthread_cond_wait(&tp->is_empty,&tp->poolMutex);
             //闲置线程太多需要被销毁
             while(tp->numReduce--){
@@ -56,6 +64,7 @@ void* Worker(void* args){
             }
             pthread_mutex_unlock(&tp->poolMutex);
         }
+        printf("执行任务\n");
         tp->busyThread++;
         void (*mission)(void*args) = tp->task->function;
         void* arg = tp->task->args;
@@ -86,9 +95,9 @@ void* Manager(void* args){
         if(busy < task && live <tp->max){
             pthread_mutex_lock(&tp->poolMutex);
             for(int i = 0;(i<REDUCE)&&(live<tp->max);i++){
-                for(int i =0;i<tp->max;i++){
-                    if(tp->work[i]==0){
-                        pthread_create(&tp->work[i],NULL, Worker, tp);
+                for(int j =0;i<tp->max;j++){
+                    if(tp->work[j]==0){
+                        pthread_create(&tp->work[j],NULL, Worker, tp);
                         tp->liveThread++;
                         break;
                     }
@@ -115,12 +124,8 @@ void* Manager(void* args){
 }
 
 
-
-
-
-
-
 void Thread_exit(ThreadPool* tp){
+    pthread_mutex_lock(&tp->poolMutex);
     pthread_t id = pthread_self();
     for(int i = 0;i<tp->max;i++){
         if(id == tp->work[i]){
@@ -128,6 +133,7 @@ void Thread_exit(ThreadPool* tp){
             break;
         }
     }
+    pthread_mutex_unlock(&tp->poolMutex);
     pthread_exit(NULL);
 }
 
@@ -138,9 +144,9 @@ void Task_add(ThreadPool* tp,void*(func)(void*),void*arg){
     while(tp->tasksize>=tp->taskCapacity){
         pthread_cond_wait(&tp->is_full,&tp->poolMutex);
     }
-    tp->task[tp->taskHead].function = func;
-    tp->task[tp->taskHead].args = arg;
-    tp->taskHead = (tp->taskHead++) % tp->taskCapacity;
+    tp->task[tp->taskTail].function = func;
+    tp->task[tp->taskTail].args = arg;
+    tp->taskTail = (tp->taskTail + 1) % tp->taskCapacity;
     tp->tasksize++;
     pthread_cond_signal(&tp->is_empty);
     pthread_mutex_unlock(&tp->poolMutex);
