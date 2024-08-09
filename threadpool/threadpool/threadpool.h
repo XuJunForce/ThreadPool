@@ -2,7 +2,8 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<pthread.h>
-
+#include<unistd.h>
+#include<string.h>
 #define REDUCE 2		//每次增加线程最多增加两个
 
 
@@ -14,6 +15,9 @@ typedef struct Task {
 typedef struct ThreadPool {
 	int min;	//线程池中最小的线程数
 	int max;	//线程池中最小的线程数
+	int numReduce;	//当前还需要减少的线程数量
+	int busyThread;		//执行任务的线程数
+	int liveThread;		//存活的线程数
 	int shutdown;	//线程池是否被关闭
 
 	Task* task;		//任务队列
@@ -37,4 +41,5 @@ typedef struct ThreadPool {
 
 void* Worker(void* args);
 void* Manager(void* args);
-ThreadPool* thread_init(int min, int max, int capacity);
+ThreadPool* Thread_init(int min, int max, int capacity);
+void Thread_exit(ThreadPool* tp);
