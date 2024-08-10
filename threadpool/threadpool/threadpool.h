@@ -8,7 +8,7 @@
 
 
 typedef struct Task {
-	void (*function)(void* args);
+	void* (*function)(void* args);
 	void* args;
 }Task;
 
@@ -43,4 +43,4 @@ void* Worker(void* args);
 void* Manager(void* args);
 ThreadPool* Thread_init(int min, int max, int capacity);
 void Thread_exit(ThreadPool* tp);
-void Task_add(ThreadPool* tp,void*(func)(void*),void*args);
+void Task_add(ThreadPool* tp,void*(*func)(void*),void*args);
